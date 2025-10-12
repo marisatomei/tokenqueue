@@ -5,6 +5,8 @@ import { ethers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider";
 import { CONTRACTS, NETWORK_CONFIG } from "@/constants/config";
 import { WAIT_TOKEN_ABI, TOKEN_SALE_ABI, WAITING_LIST_ABI } from "@/utils/abis";
+// Import console filter to suppress expected ethers.js gas estimation errors
+import "@/utils/consoleFilter";
 
 const Web3Context = createContext();
 

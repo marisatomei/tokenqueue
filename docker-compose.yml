@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    platform: linux/arm64
     container_name: hardhat-node
     ports:
       - "8545:8545"
@@ -23,12 +27,22 @@ services:
     environment:
       - NODE_ENV=development
     command: npx hardhat node --hostname 0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # Container for running tests
   hardhat-test:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    platform: linux/arm64
     container_name: hardhat-test
     volumes:
       - ./contracts:/app/contracts

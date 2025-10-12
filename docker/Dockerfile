@@ -1,11 +1,12 @@
 FROM node:22-alpine
 
-# Install dependencies for native modules
+# Install dependencies for native modules and healthcheck
 RUN apk add --no-cache \
     git \
     python3 \
     make \
-    g++
+    g++ \
+    wget
 
 # Set working directory
 WORKDIR /app

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useWeb3 } from "@/contexts/Web3Context";
 
-export default function QueueTimeline() {
+export default function QueueTimeline({ refreshKey = 0 }) {
   const { account, waitingListContract } = useWeb3();
   const [queue, setQueue] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,12 +48,12 @@ export default function QueueTimeline() {
     }
   };
 
-  // Initial fetch
+  // Initial fetch and refresh when refreshKey changes
   useEffect(() => {
     if (account && waitingListContract) {
       fetchQueue();
     }
-  }, [account, waitingListContract]);
+  }, [account, waitingListContract, refreshKey]);
 
   // Set up event listeners for real-time updates
   useEffect(() => {

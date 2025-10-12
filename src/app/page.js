@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import { useWeb3 } from "@/contexts/Web3Context";
 import ThemeToggle from "@/components/ThemeToggle";
 import QueueTimeline from "@/components/QueueTimeline";
+import { handleTransactionError } from "@/utils/errorHandler";
 
 export default function Home() {
   const {
@@ -23,6 +24,21 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Auto-dismiss messages after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
   // Token data
   const [tokenBalance, setTokenBalance] = useState("0");
   const [tokenPrice, setTokenPrice] = useState("0");
@@ -33,6 +49,7 @@ export default function Home() {
   const [myPosition, setMyPosition] = useState(null);
   const [queueLength, setQueueLength] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
+  const [queueRefreshKey, setQueueRefreshKey] = useState(0);
 
   // Load all data
   useEffect(() => {
@@ -41,7 +58,28 @@ export default function Home() {
     }
   }, [account, isCorrectNetwork, waitTokenContract, tokenSaleContract, waitingListContract]);
 
-  const loadAllData = async () => {
+  // Listen for queue events to auto-refresh
+  useEffect(() => {
+    if (!waitingListContract) return;
+
+    const handleQueueChange = () => {
+      console.log("Queue event detected, refreshing data...");
+      loadAllData();
+      setQueueRefreshKey(prev => prev + 1);
+    };
+
+    waitingListContract.on("UserRegistered", handleQueueChange);
+    waitingListContract.on("UserRemoved", handleQueueChange);
+    waitingListContract.on("UserWithdrew", handleQueueChange);
+
+    return () => {
+      waitingListContract.off("UserRegistered", handleQueueChange);
+      waitingListContract.off("UserRemoved", handleQueueChange);
+      waitingListContract.off("UserWithdrew", handleQueueChange);
+    };
+  }, [waitingListContract]);
+
+  const loadAllData = async (skipPositionCheck = false) => {
     try {
       // Token data
       const [balance, price] = await Promise.all([
@@ -63,18 +101,23 @@ export default function Home() {
       setQueueLength(Number(length));
       setIsOwner(owner.toLowerCase() === account.toLowerCase());
 
-      if (inQueue) {
+      // Only fetch position if explicitly requested and user is in queue
+      // This avoids console errors from gas estimation on view functions
+      if (inQueue && !skipPositionCheck) {
         try {
           const position = await waitingListContract.getMyPosition();
-          setMyPosition(Number(position) + 1);
+          setMyPosition(Number(position)); // Already 1-indexed from contract
         } catch (err) {
-          console.error("Error getting position:", err);
+          // Silently handle - position will be null
+          setMyPosition(null);
         }
-      } else {
+      } else if (!inQueue) {
         setMyPosition(null);
       }
+      // If skipPositionCheck is true and inQueue is true, keep existing position
     } catch (err) {
-      console.error("Error loading data:", err);
+      // Silently handle data loading errors
+      console.log("Info: Unable to load some data, will retry on next update");
     }
   };
 
@@ -93,8 +136,8 @@ export default function Home() {
       setSuccess(`Successfully purchased ${nextPurchaseAmount} WAIT tokens!`);
       await loadAllData();
     } catch (err) {
-      console.error("Error buying token:", err);
-      setError(err.reason || err.message || "Transaction failed");
+      const errorMessage = await handleTransactionError(err, "buying token");
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -128,9 +171,10 @@ export default function Home() {
 
       setSuccess("Successfully joined the queue!");
       await loadAllData();
+      setQueueRefreshKey(prev => prev + 1); // Trigger QueueTimeline refresh
     } catch (err) {
-      console.error("Error joining queue:", err);
-      setError(err.reason || err.message || "Transaction failed");
+      const errorMessage = await handleTransactionError(err, "joining queue");
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -149,9 +193,10 @@ export default function Home() {
       await tx.wait();
       setSuccess("Successfully left the queue! You received 0.5 WAIT tokens as refund.");
       await loadAllData();
+      setQueueRefreshKey(prev => prev + 1); // Trigger QueueTimeline refresh
     } catch (err) {
-      console.error("Error leaving queue:", err);
-      setError(err.reason || err.message || "Transaction failed");
+      const errorMessage = await handleTransactionError(err, "leaving queue");
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -170,9 +215,10 @@ export default function Home() {
       await tx.wait();
       setSuccess("Successfully removed first user from queue!");
       await loadAllData();
+      setQueueRefreshKey(prev => prev + 1); // Trigger QueueTimeline refresh
     } catch (err) {
-      console.error("Error removing first user:", err);
-      setError(err.reason || err.message || "Transaction failed");
+      const errorMessage = await handleTransactionError(err, "removing first user");
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -288,19 +334,37 @@ export default function Home() {
 
               {/* Queue Timeline */}
               <div className="mb-6">
-                <QueueTimeline />
+                <QueueTimeline refreshKey={queueRefreshKey} />
               </div>
 
               {/* Messages */}
               {error && (
-                <div className="px-4 py-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300 mb-6">
-                  {error}
+                <div className="px-4 py-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300 mb-6 flex items-start justify-between gap-3">
+                  <span className="flex-1">{error}</span>
+                  <button
+                    onClick={() => setError(null)}
+                    className="flex-shrink-0 text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 transition-colors"
+                    aria-label="Close"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               )}
 
               {success && (
-                <div className="px-4 py-3 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-300 mb-6">
-                  {success}
+                <div className="px-4 py-3 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-300 mb-6 flex items-start justify-between gap-3">
+                  <span className="flex-1">{success}</span>
+                  <button
+                    onClick={() => setSuccess(null)}
+                    className="flex-shrink-0 text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 transition-colors"
+                    aria-label="Close"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               )}
 

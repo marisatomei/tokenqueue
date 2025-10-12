@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useWeb3 } from "@/contexts/Web3Context";
+import { handleTransactionError } from "@/utils/errorHandler";
 
 export default function QueueManagement() {
   const { account, waitingListContract, waitTokenContract, isCorrectNetwork } = useWeb3();
@@ -14,6 +15,21 @@ export default function QueueManagement() {
   const [tokenBalance, setTokenBalance] = useState("0");
   const [registrationCost, setRegistrationCost] = useState("0");
   const [withdrawalRefund, setWithdrawalRefund] = useState("0");
+
+  // Auto-dismiss messages after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   useEffect(() => {
     if (account && waitingListContract && waitTokenContract && isCorrectNetwork) {
@@ -35,12 +51,20 @@ export default function QueueManagement() {
       setRegistrationCost(ethers.formatEther(regCost));
       setWithdrawalRefund(ethers.formatEther(wdRefund));
 
+      // Only try to get position if user is in queue
       if (inQueue) {
         try {
-          const position = await waitingListContract.getMyPosition();
-          setMyPosition(Number(position) + 1); // Convert to 1-indexed
+          // Double-check to prevent race conditions
+          const stillInQueue = await waitingListContract.isInQueue(account);
+          if (stillInQueue) {
+            const position = await waitingListContract.getMyPosition();
+            setMyPosition(Number(position)); // Already 1-indexed from contract
+          } else {
+            setMyPosition(null);
+          }
         } catch (err) {
-          console.error("Error getting position:", err);
+          // Silently handle expected errors
+          setMyPosition(null);
         }
       } else {
         setMyPosition(null);
@@ -82,8 +106,8 @@ export default function QueueManagement() {
       setSuccess("Successfully joined the queue!");
       await loadData(); // Refresh data
     } catch (err) {
-      console.error("Error joining queue:", err);
-      setError(err.reason || err.message || "Transaction failed");
+      const errorMessage = await handleTransactionError(err, "joining queue");
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +128,8 @@ export default function QueueManagement() {
       setSuccess(`Successfully left the queue! You received ${withdrawalRefund} WAIT tokens as refund.`);
       await loadData(); // Refresh data
     } catch (err) {
-      console.error("Error leaving queue:", err);
-      setError(err.reason || err.message || "Transaction failed");
+      const errorMessage = await handleTransactionError(err, "leaving queue");
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -181,14 +205,32 @@ export default function QueueManagement() {
       )}
 
       {error && (
-        <div className="mt-4 px-4 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300">
-          {error}
+        <div className="mt-4 px-4 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300 flex items-start justify-between gap-3">
+          <span className="flex-1">{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="flex-shrink-0 text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="mt-4 px-4 py-2 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-300">
-          {success}
+        <div className="mt-4 px-4 py-2 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-300 flex items-start justify-between gap-3">
+          <span className="flex-1">{success}</span>
+          <button
+            onClick={() => setSuccess(null)}
+            className="flex-shrink-0 text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
     </div>
