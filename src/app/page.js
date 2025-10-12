@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { useWeb3 } from "@/contexts/Web3Context";
+import ThemeToggle from "@/components/ThemeToggle";
+import QueueTimeline from "@/components/QueueTimeline";
 
 export default function Home() {
   const {
@@ -205,148 +207,163 @@ export default function Home() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">TokenQueue</h1>
             </div>
 
-            {/* Wallet Connect Button */}
-            {!account ? (
-              <button
-                onClick={connectWallet}
-                disabled={isConnecting}
-                className="bg-[#068cf9] hover:bg-[#068cf9]/90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
-              >
-                <span className="material-symbols-outlined">account_balance_wallet</span>
-                {isConnecting ? "Connecting..." : "Connect Wallet"}
-              </button>
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-mono">{formatAddress(account)}</span>
+            {/* Theme Toggle & Wallet Connect */}
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+
+              {!account ? (
                 <button
-                  onClick={disconnectWallet}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  className="bg-[#068cf9] hover:bg-[#068cf9]/90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
                 >
-                  Disconnect
+                  <span className="material-symbols-outlined">account_balance_wallet</span>
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
                 </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-mono">{formatAddress(account)}</span>
+                  <button
+                    onClick={disconnectWallet}
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-2xl space-y-8">
-          {/* Title */}
-          <div className="text-center">
+      <main className="flex-grow py-8 px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-5xl">
+          {/* Header Section */}
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-              Decentralized Waiting List System
+              {account ? "Waiting List Queue" : "Decentralized Waiting List System"}
             </h2>
-            <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">
-              {account ? "Manage your tokens and queue position." : "Connect your wallet to get started."}
+            <p className="mt-2 text-lg text-gray-500 dark:text-gray-400">
+              {account && isCorrectNetwork && isInQueue && myPosition
+                ? `You are position #${myPosition} out of ${queueLength} users`
+                : account && isCorrectNetwork
+                ? `Queue has ${queueLength} users`
+                : "Connect your wallet to get started"}
             </p>
           </div>
 
           {/* Wrong Network Warning */}
           {account && !isCorrectNetwork && (
-            <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded-lg">
+            <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded-lg mb-6">
               <p className="font-semibold">Wrong Network!</p>
               <p className="text-sm">Please switch to Hardhat Local (Chain ID: 31337)</p>
             </div>
           )}
 
-          {/* Main Card */}
+          {/* Main Content */}
           {account && isCorrectNetwork && (
-            <div className="bg-white dark:bg-gray-800 shadow-xl rounded-xl p-6 sm:p-8 space-y-6">
-              {/* Status Section */}
-              <div className="text-center space-y-2">
-                <p className="text-lg font-medium text-gray-500 dark:text-gray-400">Your Status</p>
-
-                {/* Token Balance */}
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Token Balance</p>
-                  <p className="text-3xl font-bold text-[#068cf9]">{tokenBalance} WAIT</p>
+            <>
+              {/* Stats Bar */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Your Balance</p>
+                  <p className="text-2xl font-bold text-[#068cf9] mt-1">{tokenBalance} WAIT</p>
                 </div>
-
-                {/* Queue Position */}
-                {isInQueue && myPosition !== null ? (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Your Position</p>
-                    <p className="text-4xl font-bold text-[#068cf9]">#{myPosition}</p>
-                    <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                      You are currently in position {myPosition} on the waiting list.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="mt-4">
-                    <p className="text-base text-gray-500 dark:text-gray-400">
-                      You are not currently in the queue. Queue length: {queueLength}
-                    </p>
-                  </div>
-                )}
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Position</p>
+                  <p className="text-2xl font-bold text-[#068cf9] mt-1">
+                    {isInQueue && myPosition ? `#${myPosition}` : "—"}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Queue Length</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{queueLength}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Next Purchase</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{nextPurchaseAmount} WAIT</p>
+                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                {/* Buy Tokens & Join Queue */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    onClick={handleBuyToken}
-                    disabled={isLoading}
-                    className="w-full flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg text-white bg-[#068cf9] hover:bg-[#068cf9]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#068cf9] transition-all disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined">shopping_cart</span>
-                    {isLoading ? "Processing..." : `Buy ${nextPurchaseAmount} WAIT (${tokenPrice} tBNB)`}
-                  </button>
-
-                  {!isInQueue ? (
-                    <button
-                      onClick={handleJoinQueue}
-                      disabled={isLoading || parseFloat(tokenBalance) < 1}
-                      className="w-full flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg text-white bg-[#068cf9] hover:bg-[#068cf9]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#068cf9] transition-all disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined">group_add</span>
-                      Join Waiting List (1 Token)
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleLeaveQueue}
-                      disabled={isLoading}
-                      className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-red-500 text-sm font-semibold rounded-lg text-red-500 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined">logout</span>
-                      Leave List (Get 0.5 WAIT)
-                    </button>
-                  )}
-                </div>
-
-                {/* Admin Button */}
-                {isOwner && (
-                  <button
-                    onClick={handleRemoveFirst}
-                    disabled={isLoading || queueLength === 0}
-                    className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-semibold rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#068cf9] transition-all disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined">admin_panel_settings</span>
-                    Remove First User (Admin)
-                  </button>
-                )}
-              </div>
-
-              {/* Bonus Info */}
-              <div className="text-xs text-center text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                💡 Bonus System: Each purchase gives you 1 + your current balance in tokens!
+              {/* Queue Timeline */}
+              <div className="mb-6">
+                <QueueTimeline />
               </div>
 
               {/* Messages */}
               {error && (
-                <div className="px-4 py-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300">
+                <div className="px-4 py-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300 mb-6">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="px-4 py-3 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-300">
+                <div className="px-4 py-3 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-300 mb-6">
                   {success}
                 </div>
               )}
-            </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <button
+                  onClick={handleBuyToken}
+                  disabled={isLoading}
+                  className="flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg text-white bg-[#068cf9] hover:bg-[#068cf9]/90 shadow-lg transition-all disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined">shopping_cart</span>
+                  {isLoading ? "Processing..." : `Buy ${nextPurchaseAmount} WAIT`}
+                </button>
+
+                {!isInQueue ? (
+                  <button
+                    onClick={handleJoinQueue}
+                    disabled={isLoading || parseFloat(tokenBalance) < 1}
+                    className="flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg text-white bg-green-600 hover:bg-green-700 shadow-lg transition-all disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined">group_add</span>
+                    Join Queue (1 WAIT)
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleLeaveQueue}
+                    disabled={isLoading}
+                    className="flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg text-white bg-red-600 hover:bg-red-700 shadow-lg transition-all disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                    Leave Queue (0.5 WAIT)
+                  </button>
+                )}
+
+                {/* Placeholder for grid alignment when not in queue */}
+                {!isInQueue && <div className="hidden lg:block"></div>}
+              </div>
+
+              {/* Admin Panel */}
+              {isOwner && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-xl p-6 shadow-lg mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="material-symbols-outlined text-2xl text-yellow-600 dark:text-yellow-400">
+                      admin_panel_settings
+                    </span>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Admin Panel</h3>
+                  </div>
+                  <button
+                    onClick={handleRemoveFirst}
+                    disabled={isLoading || queueLength === 0}
+                    className="w-full flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg text-white bg-gray-700 hover:bg-gray-800 transition-all disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined">person_remove</span>
+                    Remove First User from Queue
+                  </button>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="text-center text-sm text-gray-500 dark:text-gray-400 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                💡 <strong>Bonus System:</strong> Each purchase gives you 1 + your current balance in tokens!
+              </div>
+            </>
           )}
         </div>
       </main>

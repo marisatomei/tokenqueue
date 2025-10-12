@@ -44,6 +44,10 @@ This project aims to integrate the knowledge acquired in smart contracts, token 
     * Event when the `admin` removes a user from the list (address of the removed user).
     * Event when a user withdraws (address and partial refund received).
 
+8.  **View full list**
+    * Users can check the full list of addresses in the list, but they will be ofuscated (some first characters and some final characters will be shown to users)
+    * The list will be updated when `admin` removes a user or when a user registers into the list
+
 ### **Decentralized Web Application (`React` + `ethers.js`)**
 
 1.  **Wallet Connection**

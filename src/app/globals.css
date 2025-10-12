@@ -13,6 +13,8 @@
   --radius-full: 9999px;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 .material-symbols-outlined {
   font-variation-settings:
     'FILL' 0,
