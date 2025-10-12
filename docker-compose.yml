@@ -6,7 +6,6 @@ services:
       platforms:
         - linux/amd64
         - linux/arm64
-    platform: linux/arm64
     container_name: hardhat-node
     ports:
       - "8545:8545"
@@ -42,7 +41,6 @@ services:
       platforms:
         - linux/amd64
         - linux/arm64
-    platform: linux/arm64
     container_name: hardhat-test
     volumes:
       - ./contracts:/app/contracts
