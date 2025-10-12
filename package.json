@@ -1,0 +1,48 @@
+{
+  "name": "tokenqueue",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f hardhat",
+    "docker:restart": "docker compose restart hardhat",
+    "docker:sync": "docker cp hardhat-node:/app/src/utils/abis.js src/utils/abis.js && docker cp hardhat-node:/app/src/constants/config.js src/constants/config.js && echo Synced generated files from container!",
+    "hardhat:compile": "docker compose exec hardhat npx hardhat compile",
+    "hardhat:test": "docker compose run --rm hardhat-test",
+    "hardhat:deploy": "docker compose exec hardhat npx hardhat run scripts/deploy.js --network localhost && npm run docker:sync",
+    "hardhat:deploy:testnet": "docker compose exec hardhat npx hardhat run scripts/deploy-testnet.js --network bscTestnet",
+    "hardhat:clean": "docker compose exec hardhat npx hardhat clean",
+    "hardhat:console": "docker compose exec hardhat npx hardhat console --network localhost",
+    "hardhat:time:advance": "docker compose exec hardhat npx hardhat run scripts/advance-time.js --network localhost",
+    "hardhat:time:1min": "docker compose exec hardhat node scripts/advance-time.js 60 --network localhost",
+    "hardhat:time:1hour": "docker compose exec hardhat node scripts/advance-time.js 3600 --network localhost",
+    "hardhat:time:1day": "docker compose exec hardhat node scripts/advance-time.js 86400 --network localhost",
+    "dev:all": "npm run docker:up && npm run dev",
+    "dev:setup": "npm run docker:build && npm run docker:up && node scripts/sleep.js 5 && npm run hardhat:compile && npm run hardhat:deploy"
+  },
+  "dependencies": {
+    "@metamask/detect-provider": "^2.0.0",
+    "ethers": "^6.15.0",
+    "ethers-decode-error": "^2.1.3",
+    "next": "^15.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@tailwindcss/postcss": "^4",
+    "dotenv": "^16.4.7",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.4",
+    "hardhat": "^2.22.18",
+    "tailwindcss": "^4"
+  }
+}

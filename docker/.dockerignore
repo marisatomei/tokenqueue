@@ -1,0 +1,15 @@
+node_modules
+artifacts
+cache
+.env
+.git
+.gitignore
+*.md
+src
+public
+.next
+dist
+build
+coverage
+*.log
+.DS_Store
