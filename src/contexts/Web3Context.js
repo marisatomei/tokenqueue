@@ -136,12 +136,23 @@ export function Web3Provider({ children }) {
     }
   };
 
-  const disconnectWallet = () => {
+  const disconnectWallet = async () => {
+    // Clear local state
     setAccount(null);
     setSigner(null);
     setWaitTokenContract(null);
     setTokenSaleContract(null);
     setWaitingListContract(null);
+
+    // Note: MetaMask doesn't support programmatic disconnect via eth_requestAccounts
+    // Users must manually disconnect via MetaMask extension UI:
+    // MetaMask → Three dots → Connected sites → Disconnect
+    //
+    // Alternative: Clear local/session storage to reset app state
+    if (typeof window !== "undefined") {
+      sessionStorage.clear();
+      localStorage.removeItem("walletconnect");
+    }
   };
 
   const value = {

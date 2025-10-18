@@ -22,7 +22,7 @@ module.exports = {
         interval: 1000 // Mine a new block every 1 second for better UI responsiveness
       }
     },
-    // Localhost (for connecting from host machine to Docker container)
+    // Localhost (for connecting from inside Docker container to Hardhat node)
     localhost: {
       url: "http://127.0.0.1:8545",
       chainId: 31337,

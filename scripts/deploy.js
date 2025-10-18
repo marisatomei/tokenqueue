@@ -131,7 +131,7 @@ export const CONTRACTS = {
 export const NETWORK_CONFIG = {
   chainId: ${chainId},
   name: "${network.name}",
-  rpcUrl: "http://127.0.0.1:8545"
+  rpcUrl: "http://127.0.0.1:8546"
 };
 `;
 

@@ -19,6 +19,7 @@ export default function WalletConnect() {
           <button
             onClick={disconnectWallet}
             className="ml-2 px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded"
+            title="Clears app state. For full disconnect, use MetaMask → Connected sites"
           >
             Disconnect
           </button>

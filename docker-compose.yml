@@ -1,14 +1,11 @@
 services:
-  hardhat:
+  tokenqueue-hardhat:
     build:
       context: .
       dockerfile: docker/Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
-    container_name: hardhat-node
+    container_name: tokenqueue-hardhat-node
     ports:
-      - "8545:8545"
+      - "8546:8545"
     volumes:
       # Mount contracts and scripts for hot reload
       - ./contracts:/app/contracts
@@ -20,9 +17,9 @@ services:
       # Mount src for auto-generated files (ABIs, config)
       - ./src:/app/src
       # Persist node modules
-      - hardhat_node_modules:/app/node_modules
+      - tokenqueue_hardhat_node_modules:/app/node_modules
     networks:
-      - hardhat-network
+      - tokenqueue-hardhat-network
     environment:
       - NODE_ENV=development
     command: npx hardhat node --hostname 0.0.0.0
@@ -34,29 +31,26 @@ services:
       start_period: 30s
 
   # Container for running tests
-  hardhat-test:
+  tokenqueue-hardhat-test:
     build:
       context: .
       dockerfile: docker/Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
-    container_name: hardhat-test
+    container_name: tokenqueue-hardhat-test
     volumes:
       - ./contracts:/app/contracts
       - ./scripts:/app/scripts
       - ./test:/app/test
       - ./hardhat.config.js:/app/hardhat.config.js
-      - hardhat_node_modules:/app/node_modules
+      - tokenqueue_hardhat_node_modules:/app/node_modules
     networks:
-      - hardhat-network
+      - tokenqueue-hardhat-network
     profiles:
       - test
     command: npx hardhat test
 
 volumes:
-  hardhat_node_modules:
+  tokenqueue_hardhat_node_modules:
 
 networks:
-  hardhat-network:
+  tokenqueue-hardhat-network:
     driver: bridge

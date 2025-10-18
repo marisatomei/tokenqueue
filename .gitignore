@@ -40,7 +40,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# hardhat
+# Hardhat
 /artifacts
 /cache
+/typechain
 /typechain-types
+
+# Hardhat files
+hardhat.config.ts
+coverage.json
+coverage/
+
+# Deployed contracts (auto-generated)
+src/constants/config.js
+src/utils/abis.js
